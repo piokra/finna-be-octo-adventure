@@ -1,0 +1,6 @@
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Broadcaster\Broadcaster\bin\Debug\Broadcaster.exe.config
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Broadcaster\Broadcaster\bin\Debug\Broadcaster.exe
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Broadcaster\Broadcaster\bin\Debug\Broadcaster.pdb
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Broadcaster\Broadcaster\obj\Debug\Broadcaster.csprojResolveAssemblyReference.cache
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Broadcaster\Broadcaster\obj\Debug\Broadcaster.exe
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Broadcaster\Broadcaster\obj\Debug\Broadcaster.pdb
