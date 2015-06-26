@@ -5,15 +5,16 @@
 *.suo
 *.user
 *.sln.docstates
+*.dll
 
 # Build results
-*[Dd]ebug/
-*[Dd]ebugPublic/
-*[Rr]elease/
-*x64/
-*build/
-*bld/
-*[Bb]in/
+*[Dd]ebug/*
+*[Dd]ebugPublic/*
+*[Rr]elease/*
+*x64/*
+*build/*
+*bld/*
+*[Bb]in/*
 *[Oo]bj/
 
 # Roslyn cache directories

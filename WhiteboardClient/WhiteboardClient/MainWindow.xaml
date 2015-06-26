@@ -9,7 +9,7 @@
         <sharpGL:OpenGLControl 
             Name="openGLControl" OpenGLDraw="openGLControl_OpenGLDraw" 
             OpenGLInitialized="openGLControl_OpenGLInitialized" Resized="openGLControl_Resized"
-            DrawFPS="True" RenderContextType="FBO" FrameRate="20" Margin="0,0,200,80"/>
+            DrawFPS="True" RenderContextType="FBO" FrameRate="20" Margin="0,0,200,80" MouseUp="openGLControl_MouseUp" MouseLeave="openGLControl_MouseLeave" MouseMove="openGLControl_MouseMove" MouseDown="openGLControl_MouseDown"/>
         <Grid HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Stretch" Width="200">
             <ListBox Name="ListBox1" HorizontalAlignment="Stretch" Margin="10,0,10,80" VerticalAlignment="Stretch">
                 

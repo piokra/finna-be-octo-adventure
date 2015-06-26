@@ -27,6 +27,11 @@ namespace WhiteboardClient
         public MainWindow()
         {
             InitializeComponent();
+            mPoints.Add(new Vertex(0, 0, 0, 1));
+            mPoints.Add(new Vertex(0, 1, 0, 1));
+            mPoints.Add(new Vertex(1, 1, 0, 1));
+
+            
         }
 
         /// <summary>
@@ -34,6 +39,22 @@ namespace WhiteboardClient
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="args">The <see cref="SharpGL.SceneGraph.OpenGLEventArgs"/> instance containing the event data.</param>
+        class Vertex
+        {
+            public Vertex()
+            {
+
+            }
+            public Vertex(double x, double y, double z, double w)
+            {
+                this.x=x;
+                this.y=y;
+                this.z=z;
+                this.w=w;
+            }
+            public double x,y,z,w;
+        };
+        List<Vertex> mPoints = new List<Vertex>();
         private void openGLControl_OpenGLDraw(object sender, OpenGLEventArgs args)
         {
             //  Get the OpenGL object.
@@ -49,31 +70,12 @@ namespace WhiteboardClient
             gl.Rotate(rotation, 0.0f, 1.0f, 0.0f);
 
             //  Draw a coloured pyramid.
-            gl.Begin(OpenGL.GL_TRIANGLES);
-            gl.Color(1.0f, 0.0f, 0.0f);
-            gl.Vertex(0.0f, 1.0f, 0.0f);
-            gl.Color(0.0f, 1.0f, 0.0f);
-            gl.Vertex(-1.0f, -1.0f, 1.0f);
-            gl.Color(0.0f, 0.0f, 1.0f);
-            gl.Vertex(1.0f, -1.0f, 1.0f);
-            gl.Color(1.0f, 0.0f, 0.0f);
-            gl.Vertex(0.0f, 1.0f, 0.0f);
-            gl.Color(0.0f, 0.0f, 1.0f);
-            gl.Vertex(1.0f, -1.0f, 1.0f);
-            gl.Color(0.0f, 1.0f, 0.0f);
-            gl.Vertex(1.0f, -1.0f, -1.0f);
-            gl.Color(1.0f, 0.0f, 0.0f);
-            gl.Vertex(0.0f, 1.0f, 0.0f);
-            gl.Color(0.0f, 1.0f, 0.0f);
-            gl.Vertex(1.0f, -1.0f, -1.0f);
-            gl.Color(0.0f, 0.0f, 1.0f);
-            gl.Vertex(-1.0f, -1.0f, -1.0f);
-            gl.Color(1.0f, 0.0f, 0.0f);
-            gl.Vertex(0.0f, 1.0f, 0.0f);
-            gl.Color(0.0f, 0.0f, 1.0f);
-            gl.Vertex(-1.0f, -1.0f, -1.0f);
-            gl.Color(0.0f, 1.0f, 0.0f);
-            gl.Vertex(-1.0f, -1.0f, 1.0f);
+            gl.Begin(OpenGL.GL_LINE_LOOP);
+            int length = mPoints.Count;
+            for (int i = 0; i < length; i++)
+            {
+                gl.Vertex(mPoints[i].x, mPoints[i].y, mPoints[i].z);
+            }
             gl.End();
 
             //  Nudge the rotation.
@@ -93,7 +95,7 @@ namespace WhiteboardClient
             OpenGL gl = openGLControl.OpenGL;
 
             //  Set the clear color.
-            gl.ClearColor(0, 0, 0, 0);
+            gl.ClearColor(1, 1, 1, 1);
         }
 
         /// <summary>
@@ -107,19 +109,14 @@ namespace WhiteboardClient
 
             //  Get the OpenGL object.
             OpenGL gl = openGLControl.OpenGL;
+            
 
             //  Set the projection matrix.
-            gl.MatrixMode(OpenGL.GL_PROJECTION);
-
-            //  Load the identity.
-            gl.LoadIdentity();
-
+            gl.Viewport(0, 0, (int)openGLControl.ActualWidth, (int)openGLControl.ActualHeight);
             //  Create a perspective transformation.
-            gl.Perspective(60.0f, (double)Width / (double)Height, 0.01, 100.0);
-
+            
             //  Use the 'look at' helper function to position and aim the camera.
-            gl.LookAt(-5, 5, -5, 0, 0, 0, 0, 1, 0);
-
+            
             //  Set the modelview matrix.
             gl.MatrixMode(OpenGL.GL_MODELVIEW);
         }
@@ -136,6 +133,38 @@ namespace WhiteboardClient
                 ListBox1.Items.Add(TextBox1.Text);
                 TextBox1.Text = "";
             }
+        }
+        bool mMouseDown = false;
+        private void openGLControl_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            mMouseDown = false;
+        }
+
+        private void openGLControl_MouseLeave(object sender, MouseEventArgs e)
+        {
+            mMouseDown = false;
+        }
+
+        private void openGLControl_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (mMouseDown)
+            {
+
+
+                double x = e.GetPosition(openGLControl).X;
+                double y = e.GetPosition(openGLControl).Y;
+                x = x * 2 / openGLControl.ActualWidth;
+                y = y * 2 / openGLControl.ActualHeight;
+                x -= 1;
+                y -= 1;
+                mPoints.Add(new Vertex(x, y, 0, 1));
+                ListBox1.Items.Add(x.ToString() + " " + y.ToString());
+            }
+       }
+
+        private void openGLControl_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            mMouseDown = true;
         }
     }
 }
