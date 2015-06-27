@@ -42,6 +42,7 @@ namespace Broadcaster.Broadcaster
             {
                 try
                 {
+
                     mClients[i].GetStream().Close();
                     mClients[i].Close();
                 }
@@ -66,7 +67,8 @@ namespace Broadcaster.Broadcaster
             {
                 addClients();
                 byte[] data = checkForNewData().ToArray();
-                broadcast(data);
+                if(data.Length>0)
+                    broadcast(data);
                 removeDisconnectedClients();
             }
             
@@ -80,6 +82,15 @@ namespace Broadcaster.Broadcaster
                     System.Console.WriteLine("Connection pending");
                     TcpClient tcp = mServer.AcceptTcpClient();
                     mClients.Add(tcp);
+                    int clienti = mClients.Count - 1;
+                    ThreadStart a = delegate 
+                    {
+                        listenForNewData(clienti);
+                    };
+                    mListeners.Add(new Thread(a));
+                    mMutexes.Add(new Mutex());
+                    mReceivedData.Add(new List<byte>());
+                    mListeners[clienti].Start();
                 }
             }
             catch (Exception e)
@@ -98,15 +109,24 @@ namespace Broadcaster.Broadcaster
                 {
                     try
                     {
-                        if(!mClients[i].Connected)
+                        pos = i;
+                        if(mClients[pos]!=null)
+                        if(!mClients[pos].Connected)
                         {
-                            TcpClient t = mClients[i];
-                            mClients.RemoveAt(pos);
+                            TcpClient t = mClients[pos];
+                            mClients[pos] = null;
+                           
                             t.Close();
+                            mListeners[pos].Abort();
+                            mMutexes[pos].Close();
+                            mMutexes[pos] = null;
+                            mReceivedData[pos] = null;
+                            
+                            mListeners[pos] = null;
                         }
                         else
                         {
-                            pos++;
+                            
                         }
                         i++;
                     }
@@ -118,33 +138,52 @@ namespace Broadcaster.Broadcaster
             }
 
         }
+        List<Thread> mListeners = new List<Thread>();
+        List<Mutex> mMutexes = new List<Mutex>();
+        List<List<byte>> mReceivedData = new List<List<byte>>();
         List<byte> checkForNewData()
         {
             List<byte> data = new List<byte>();
+            for (int i = 0; i < mReceivedData.Count; i++ )
+            {
+                if(mMutexes[i]!=null)
+                if(mReceivedData[i].Count > 0)
+                {
+                    
+                    mMutexes[i].WaitOne();
+
+                    data.AddRange(mReceivedData[i]);
+                    mReceivedData[i].Clear();
+                    mMutexes[i].ReleaseMutex();
+                    return data;
+
+                    
+                }
+            }
+            return data;
             
-            int length = mClients.Count;
-            byte b = 0;
+            
+        }
+        void listenForNewData(int clientIndex)
+        {
             try
             {
-
-
-
-                for (int i = 0; i < length; i++)
+                while(true)
                 {
-                    System.Console.WriteLine(i);
+                    byte[] count = new byte[4];
                     
-                    while ((b = (byte)mClients[i].GetStream().ReadByte()) > 0)
-                    {
-                        Console.WriteLine(b);
-                        data.Add(b);
-                    }
-                    data.Add(0);
-                    Console.WriteLine("Done.");                        
-                }
-                length = data.Count();
-                for (int i = 0; i < length; i++)
-                {
-                    System.Console.Write(data[i]);
+                    
+                    
+                    mClients[clientIndex].GetStream().Read(count, 0, 4);
+                    
+                    int size = BitConverter.ToInt32(count, 0);
+                    byte[] data = new byte[size];
+
+                    mClients[clientIndex].GetStream().Read(data, 0, size);
+                    mMutexes[clientIndex].WaitOne();
+                    mReceivedData[clientIndex].AddRange(count);
+                    mReceivedData[clientIndex].AddRange(data);
+                    mMutexes[clientIndex].ReleaseMutex();
                 }
             }
             catch (Exception e)
@@ -152,32 +191,37 @@ namespace Broadcaster.Broadcaster
 
                 System.Console.WriteLine(e.ToString());
             }
-            return data;
         }
-
         void broadcast(byte[] data)
         {
             
             int length = mClients.Count();
             List<Task> tasks = new List<Task>();
+            Console.WriteLine("Broadcasting: " + data.Length);
+            for (int i = 0; i < data.Length; i++ )
+            {
+                Console.Write(data[i]+" ");
+            }
+            Console.WriteLine();
             for (int i = 0; i < length; i++)
             {
-                
-                try
-                {
-                    Task task = mClients[i].GetStream().WriteAsync(data, 0, data.Length);
-                    tasks.Add(task);
-                }
-                catch (Exception)
-                {
-                    
-                    
-                }
+                if (mClients[i] != null)
+                    try
+                    {
+                        Task task = mClients[i].GetStream().WriteAsync(data, 0, data.Length);
+                        tasks.Add(task);
+                    }
+                    catch (Exception)
+                    {
+
+
+                    }
             }
 
             for(int i=0; i<tasks.Count; i++)
             {
-                tasks[i].Wait(100);
+                if(tasks[i]!=null)
+                    tasks[i].Wait(100);
             }
         }
     }

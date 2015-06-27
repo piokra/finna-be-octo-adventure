@@ -17,7 +17,7 @@
             <TextBox Name="TextBox1" HorizontalAlignment="Stretch"  Margin="10,0,10,10" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Bottom" Height="60"/>
         </Grid>
         <Grid HorizontalAlignment="Stretch" Height="80" Margin="0,0,200,0" VerticalAlignment="Bottom">
-            <Button Content="Button" HorizontalAlignment="Left" Margin="31,33,0,0" VerticalAlignment="Top" Width="75"/>
+            <Button Content="Clear" HorizontalAlignment="Left" Margin="31,33,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
             <Button Content="Button" HorizontalAlignment="Left" Margin="149,33,0,0" VerticalAlignment="Top" Width="75"/>
             <Button Content="Button" HorizontalAlignment="Left" Margin="257,33,0,0" VerticalAlignment="Top" Width="75"/>
             <Button Content="Button" HorizontalAlignment="Left" Margin="364,33,0,0" VerticalAlignment="Top" Width="75"/>

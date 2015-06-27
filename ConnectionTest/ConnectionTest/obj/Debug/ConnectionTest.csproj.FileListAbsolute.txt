@@ -3,3 +3,4 @@ C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\Connectio
 C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\ConnectionTest\ConnectionTest\bin\Debug\ConnectionTest.pdb
 C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\ConnectionTest\ConnectionTest\obj\Debug\ConnectionTest.exe
 C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\ConnectionTest\ConnectionTest\obj\Debug\ConnectionTest.pdb
+C:\Users\Pan Piotr\Documents\Visual Studio 2013\Projects\ojp projekt 2\ConnectionTest\ConnectionTest\obj\Debug\ConnectionTest.csprojResolveAssemblyReference.cache

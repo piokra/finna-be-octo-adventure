@@ -16,6 +16,9 @@ using SharpGL;
 using SharpGL.VertexBuffers;
 using SharpGL.Shaders;
 using System.IO;
+using WhiteboardClient.Drawing;
+using WhiteboardClient.Server;
+using System.Threading;
 namespace WhiteboardClient
 {
     /// <summary>
@@ -26,64 +29,52 @@ namespace WhiteboardClient
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
         /// </summary>
+        /// 
         public MainWindow()
         {
             InitializeComponent();
-            mPoints.Add(new Vertex(0, 0, 0, 1));
-            mPoints.Add(new Vertex(0, 1, 0, 1));
-            mPoints.Add(new Vertex(1, 1, 0, 1));
+            mClient = new ServerClient("localhost", 10001);
+            
 
             
         }
 
+        public void Dispose()
+        {
+            mClient.stop();
+        }
+        ServerClient mClient = null;
         /// <summary>
         /// Handles the OpenGLDraw event of the openGLControl1 control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="args">The <see cref="SharpGL.SceneGraph.OpenGLEventArgs"/> instance containing the event data.</param>
-        class Vertex
-        {
-            public Vertex()
-            {
 
-            }
-            public Vertex(float x, float y, float z, float w)
-            {
-                this.x=x;
-                this.y=y;
-                this.z=z;
-                this.w=w;
-            }
-            public float x,y,z,w;
-        };
-        List<Vertex> mPoints = new List<Vertex>();
+        List<float> mPoints = new List<float>();
         float[] mTestVerticies = { 0,0,0,
                                    1,0,0,
                                    1,1,0,
                                    1,1,0,
                                    0,1,0,
                                    1,0,0};
+        List<Drawable> mToDraw = new List<Drawable>();
+        Mutex mDrawMutex = new Mutex();
         private void openGLControl_OpenGLDraw(object sender, OpenGLEventArgs args)
         {
+            mDrawMutex.WaitOne();
             //  Get the OpenGL object.
             OpenGL gl = openGLControl.OpenGL;
 
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
+            mDrawable = new Drawable(new Verticies(mPoints.ToArray(), 3, mPoints.Count / 3, 3), mShaderProgram, gl);
+            mDrawable.draw(gl);
+            int length = mToDraw.Count();
+            for (int i = 0; i < length; i++)
+            {
+                mToDraw[i].draw(gl);
+            }
 
-            //  Bind the shader, set the matrices.
-            mShaderProgram.Bind(gl);
-
-
-            //  Bind the out vertex array.
-            mVertexBufferArray.Bind(gl);
-
-            //  Draw the square.
-            gl.DrawArrays(OpenGL.GL_TRIANGLES, 0, 6);
-
-            //  Unbind our vertex array and shader.
-            mVertexBufferArray.Unbind(gl);
-            mShaderProgram.Unbind(gl);
-           
+            mDrawMutex.ReleaseMutex();
 
 
         }
@@ -98,6 +89,7 @@ namespace WhiteboardClient
         VertexBufferArray mVertexBufferArray;
 
         uint mPositionHandle = 0;
+        Drawable mDrawable = null;
         private void openGLControl_OpenGLInitialized(object sender, OpenGLEventArgs args)
         {
             //  TODO: Initialise OpenGL here.
@@ -105,7 +97,7 @@ namespace WhiteboardClient
             //  Get the OpenGL object.
             OpenGL gl = openGLControl.OpenGL;
 
-            
+            gl.PointSize(10);
             
             string vertex = File.ReadAllText("Shaders//Vertex//default.vert");
             string frag = File.ReadAllText("Shaders//Fragment//default.frag");
@@ -129,24 +121,9 @@ namespace WhiteboardClient
             vertices[15] = 0.5f; vertices[16] = 0.5f; vertices[17] = 0.0f; // Top Right corner  
             colors[15] = 0.0f; colors[16] = 1.0f; colors[17] = 0.0f; // Top Right corner  
 
-            //  Create the vertex array object.
-            mVertexBufferArray = new VertexBufferArray();
-            mVertexBufferArray.Create(gl);
-            mVertexBufferArray.Bind(gl);
+            mDrawable = new Drawable(new Verticies(vertices, 3, 6, 3),mShaderProgram,gl);
 
-            //  Create a vertex buffer for the vertex data.
-            var vertexDataBuffer = new VertexBuffer();
-            vertexDataBuffer.Create(gl);
-            vertexDataBuffer.Bind(gl);
-            vertexDataBuffer.SetData(gl, 0, vertices, false, 3);
-
-            //  Now do the same for the colour data.
-
-            //  Unbind the vertex array, we've finished specifying data for it.
-            mVertexBufferArray.Unbind(gl);
-            
-
-
+            mClient.run(this, mShaderProgram, gl);
 
             
             
@@ -188,39 +165,85 @@ namespace WhiteboardClient
             {
                 ListBox1.Items.Add(TextBox1.Text);
                 TextBox1.Text = "";
+                ListBox1.ScrollIntoView(ListBox1.Items[ListBox1.Items.Count - 1]);
             }
         }
         bool mMouseDown = false;
         private void openGLControl_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            mMouseDown = false;
+            
+            finalizeDrawing();
         }
 
         private void openGLControl_MouseLeave(object sender, MouseEventArgs e)
         {
-            mMouseDown = false;
+            
+            finalizeDrawing();
+        
         }
 
+        
+        public void addDrawable(Drawable drawable)
+        {
+            mDrawMutex.WaitOne();
+            mToDraw.Add(drawable);
+            mDrawMutex.ReleaseMutex();
+        }
         private void openGLControl_MouseMove(object sender, MouseEventArgs e)
         {
+            
             if (mMouseDown)
             {
+                mStep--;
+                if (mStep == 0)
+                {
 
-
-                float x = (float)e.GetPosition(openGLControl).X;
-                float y = (float)e.GetPosition(openGLControl).Y;
-                x = x * 2 / (float)openGLControl.ActualWidth;
-                y = -y * 2 / (float)openGLControl.ActualHeight;
-                x -= 1;
-                y += 1;
-                mPoints.Add(new Vertex(x, y, 0, 1));
-                ListBox1.Items.Add(x.ToString() + " " + y.ToString());
-            }
+                    mStep = 4;
+                    float x = (float)e.GetPosition(openGLControl).X;
+                    float y = (float)e.GetPosition(openGLControl).Y;
+                    x = x * 2 / (float)openGLControl.ActualWidth;
+                    y = -y * 2 / (float)openGLControl.ActualHeight;
+                    x -= 1;
+                    y += 1;
+                    mPoints.Add(x);
+                    mPoints.Add(y);
+                    mPoints.Add(0);
+                    ListBox1.Items.Add(x.ToString() + " " + y.ToString());
+                } 
+           }
        }
+        int mStep = 30;
+        void finalizeDrawing()
+        {
+            if (mMouseDown == false) return;
+            mMouseDown = false;
+            List<byte> bytes = new List<byte>();
+            int length = mPoints.Count();
 
+            bytes.AddRange(BitConverter.GetBytes(length * 4 + 1));
+            bytes.Add(1);
+            for (int i = 0; i < length; i++)
+            {
+                bytes.AddRange(BitConverter.GetBytes(mPoints[i]));
+            }
+            mClient.addMessage(bytes.ToArray());
+            mPoints.Clear();
+        }
         private void openGLControl_MouseDown(object sender, MouseButtonEventArgs e)
         {
             mMouseDown = true;
+            
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            clearDrawable();
+            
+        }
+
+        public void clearDrawable()
+        {
+            mToDraw.Clear();
         }
     }
 }
