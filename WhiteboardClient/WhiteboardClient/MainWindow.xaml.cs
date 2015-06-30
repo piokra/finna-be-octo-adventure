@@ -32,11 +32,22 @@ namespace WhiteboardClient
         /// 
         public MainWindow()
         {
+            
             InitializeComponent();
-            mClient = new ServerClient("localhost", 10001);
+            throw new Exception("You can't use this constructor");
             
 
             
+        }
+
+        public MainWindow(string hostname, int port)
+        {
+            InitializeComponent();
+            mClient = new ServerClient(hostname, port);
+            Random r = new Random();
+            mR = (float)r.NextDouble();
+            mG = (float)r.NextDouble();
+            mB = (float)r.NextDouble();
         }
 
         public void Dispose()
@@ -66,7 +77,7 @@ namespace WhiteboardClient
             OpenGL gl = openGLControl.OpenGL;
 
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
-            mDrawable = new Drawable(new Verticies(mPoints.ToArray(), 3, mPoints.Count / 3, 3), mShaderProgram, gl);
+            mDrawable = new Drawable(new Verticies(mPoints.ToArray(), 3, mPoints.Count / 3, 3), mShaderProgram, gl,mR,mG,mB);
             mDrawable.draw(gl);
             int length = mToDraw.Count();
             for (int i = 0; i < length; i++)
@@ -76,7 +87,7 @@ namespace WhiteboardClient
 
             mDrawMutex.ReleaseMutex();
 
-
+            updateChat();
         }
 
         /// <summary>
@@ -121,7 +132,7 @@ namespace WhiteboardClient
             vertices[15] = 0.5f; vertices[16] = 0.5f; vertices[17] = 0.0f; // Top Right corner  
             colors[15] = 0.0f; colors[16] = 1.0f; colors[17] = 0.0f; // Top Right corner  
 
-            mDrawable = new Drawable(new Verticies(vertices, 3, 6, 3),mShaderProgram,gl);
+            //mDrawable = new Drawable(new Verticies(vertices, 3, 6, 3),mShaderProgram,gl);
 
             mClient.run(this, mShaderProgram, gl);
 
@@ -163,9 +174,17 @@ namespace WhiteboardClient
         {
             if(e.Key==Key.Enter)
             {
-                ListBox1.Items.Add(TextBox1.Text);
+                
+
+                List<byte> bytes = new List<byte>();
+                byte[] text = Encoding.ASCII.GetBytes(TextBox1.Text);
+                bytes.AddRange(BitConverter.GetBytes(text.Length+1));
+                bytes.Add(3);
+                bytes.AddRange(text);
+                mClient.addMessage(bytes.ToArray());
                 TextBox1.Text = "";
-                ListBox1.ScrollIntoView(ListBox1.Items[ListBox1.Items.Count - 1]);
+                
+                
             }
         }
         bool mMouseDown = false;
@@ -208,11 +227,12 @@ namespace WhiteboardClient
                     mPoints.Add(x);
                     mPoints.Add(y);
                     mPoints.Add(0);
-                    ListBox1.Items.Add(x.ToString() + " " + y.ToString());
+                    
                 } 
            }
        }
         int mStep = 30;
+        float mR, mG, mB;
         void finalizeDrawing()
         {
             if (mMouseDown == false) return;
@@ -220,8 +240,11 @@ namespace WhiteboardClient
             List<byte> bytes = new List<byte>();
             int length = mPoints.Count();
 
-            bytes.AddRange(BitConverter.GetBytes(length * 4 + 1));
+            bytes.AddRange(BitConverter.GetBytes(length * 4 + 13));
             bytes.Add(1);
+            bytes.AddRange(BitConverter.GetBytes(mR));
+            bytes.AddRange(BitConverter.GetBytes(mG));
+            bytes.AddRange(BitConverter.GetBytes(mB));
             for (int i = 0; i < length; i++)
             {
                 bytes.AddRange(BitConverter.GetBytes(mPoints[i]));
@@ -238,12 +261,55 @@ namespace WhiteboardClient
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             clearDrawable();
+            byte[] msg = { 1, 0, 0, 0, 2 };
+            mClient.addMessage(msg);
             
         }
-
+        Mutex mChatMutex = new Mutex();
+        List<string> mChatTexts = new List<string>();
+        public void chatMessage(string text)
+        {
+            mChatMutex.WaitOne();
+            mChatTexts.Add(text);
+            mChatMutex.ReleaseMutex();
+            
+        }
+        public void updateChat()
+        {
+            mChatMutex.WaitOne();
+            int length = mChatTexts.Count;
+            for (int i = 0; i < length; i++)
+            {
+                ListBox1.Items.Insert(0, mChatTexts[i]);
+            }
+            mChatTexts.Clear();
+            mChatMutex.ReleaseMutex();
+        }
         public void clearDrawable()
         {
             mToDraw.Clear();
+           
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            try
+            {
+                mClient.stop();
+            }
+            catch (Exception)
+            {
+                
+                throw;
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            Random r = new Random();
+            mR = (float)r.NextDouble();
+            mG = (float)r.NextDouble();
+            mB = (float)r.NextDouble();
         }
     }
 }

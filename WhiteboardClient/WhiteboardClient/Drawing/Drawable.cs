@@ -9,13 +9,26 @@ namespace WhiteboardClient.Drawing
 {
     public class Drawable : IDisposable
     {
-        public Drawable(Verticies vertices, ShaderProgram program, OpenGL gl )
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="vertices"></param>
+        /// <param name="program"></param>
+        /// <param name="gl"></param>
+        /// <param name="r">temp - red int</param>
+        /// <param name="g">temp - green int</param>
+        /// <param name="b">temp - blue int </param>
+        public Drawable(Verticies vertices, ShaderProgram program, OpenGL gl, float r, float g, float b)
         {
+            mR = r;
+            mG = g;
+            mB = b;
             setGL(gl);
             mVertices = vertices;
             setProgram(program);
             //constructVertexArray(vertices, gl);
         }
+        float mR, mG, mB;
         Verticies mVertices = null;
         OpenGL mGL = null;
         public void Dispose()
@@ -58,6 +71,9 @@ namespace WhiteboardClient.Drawing
             }
             mShaderProgram.Bind(gl);
 
+            int colorHandle = mShaderProgram.GetUniformLocation(gl, "uRGB");
+            
+            gl.Uniform3(colorHandle, mR, mG, mB);
 
             //  Bind the out vertex array.
             mVertexBufferArray.Bind(gl);

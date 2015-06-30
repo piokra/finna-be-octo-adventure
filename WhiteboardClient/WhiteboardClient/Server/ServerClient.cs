@@ -103,38 +103,57 @@ namespace WhiteboardClient.Server
         int mResultSize = 0;
         void receiveMessages()
         {
-            byte b;
-            List<byte> t = new List<byte>();
-            byte[] count = new byte[4];
-            
-            Action a = delegate
+            try
             {
 
 
-                for (int i = 0; i < 4; i++)
+                byte b;
+                List<byte> t = new List<byte>();
+                byte[] count = new byte[4];
+
+                Action a = delegate
                 {
-                    count[i] = (byte)mConnection.GetStream().ReadByte();
 
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        try
+                        {
+                            count[i] = (byte)mConnection.GetStream().ReadByte();
+                        }
+                        catch (Exception)
+                        {
+                            
+                            
+                        }
+                        
+
+                    }
+                    mResultSize = BitConverter.ToInt32(count, 0);
+                };
+                if (mGotFirst == null)
+                {
+                    mGotFirst = new Task(a);
+                    mGotFirst.Start();
                 }
-                mResultSize = BitConverter.ToInt32(count, 0);
-            };
-            if (mGotFirst == null)
-            {
-                mGotFirst = new Task(a);
-                mGotFirst.Start();
+                if (mGotFirst.Status == TaskStatus.RanToCompletion)
+                {
+
+
+
+                    byte[] data = new byte[mResultSize];
+
+                    mConnection.GetStream().Read(data, 0, mResultSize);
+                    t.AddRange(count);
+                    t.AddRange(data);
+                    mReceived.Add(t.ToArray());
+                    mGotFirst = null;
+                }
             }
-            if (mGotFirst.Status == TaskStatus.RanToCompletion)
+            catch (Exception)
             {
 
 
-                
-                byte[] data = new byte[mResultSize];
-
-                mConnection.GetStream().Read(data, 0, mResultSize);
-                t.AddRange(count);
-                t.AddRange(data);
-                mReceived.Add(t.ToArray());
-                mGotFirst = null;
             }
         }
         void processMessages()
@@ -142,12 +161,22 @@ namespace WhiteboardClient.Server
             int length = mReceived.Count;
             for (int i = 0; i < length; i++)
             {
-
-                if (mReceived[i][4] == 1)
-                    drawableMessage(mReceived[i].ToArray());
-                if (mReceived[i][4] == 2)
-                    clearMessage();
+                try
+                {
+                    if (mReceived[i][4] == 1)
+                        drawableMessage(mReceived[i].ToArray());
+                    if (mReceived[i][4] == 2)
+                        clearMessage();
+                    if (mReceived[i][4] == 3)
+                        chatMessage(mReceived[i].ToArray());
                 
+                }
+                catch (Exception)
+                {
+                    
+                    
+                }
+
                 
             }
             mReceived.Clear();
@@ -160,19 +189,26 @@ namespace WhiteboardClient.Server
         {
             mWindow.clearDrawable();
         }
+        void chatMessage(byte[] data)
+        {
+            mWindow.chatMessage(Encoding.ASCII.GetString(data).Substring(5));
+        }
         void drawableMessage(byte[] data)
         {
-            int length = (data.Length-5)/4;
+            int length = (data.Length-17)/4;
             float[] floats = new float[length];
-            
+            float r, g, b;
+            r = BitConverter.ToSingle(data, 5);
+            g = BitConverter.ToSingle(data, 9);
+            b = BitConverter.ToSingle(data, 13);
             for (int i = 0; i < length; i++)
             {
                 
-                floats[i] = BitConverter.ToSingle(data,5+4*i);
+                floats[i] = BitConverter.ToSingle(data,17+4*i);
                 
             }
 
-            Drawable d = new Drawable(new Verticies((float[])floats.Clone(), 3, length, 3), mShaderProgram, mGL);
+            Drawable d = new Drawable(new Verticies((float[])floats.Clone(), 3, length, 3), mShaderProgram, mGL,r,g,b);
             mWindow.addDrawable(d);
         }
     }

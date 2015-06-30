@@ -11,7 +11,19 @@ namespace Broadcaster
         static void Main(string[] args)
         {
             int cores = Environment.ProcessorCount;
-            Server server = new Server(10001);
+            int port = 10001;
+            try
+            {
+                int tport = Int32.Parse(args[0]);
+                port = tport;
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine(e.ToString());
+            }
+            
+            Server server = new Server(port);
             server.run();
             System.Console.ReadKey();
             server.stop();
